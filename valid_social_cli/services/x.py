@@ -81,14 +81,14 @@ def post_to_x(caption: str, media_path: Optional[Union[str, List[str]]] = None) 
             print("ℹ️ No media provided. Posting text-only tweet.")
 
         # --- POST ---
-        # try:
-        #     share_button = page.locator(
-        #         'button[data-testid="tweetButton"]:not([disabled])')
-        #     share_button.click()
-        #     human_delay(5, 8)
-        #     print("✅ Post published to X successfully!")
-        # except Exception:
-        #     print("❌ Failed to click final 'Post' button. UI may have changed.")
+        try:
+            share_button = page.locator(
+                'button[data-testid="tweetButton"]:not([disabled])')
+            share_button.click()
+            human_delay(5, 8)
+            print("✅ Post published to X successfully!")
+        except Exception:
+            print("❌ Failed to click final 'Post' button. UI may have changed.")
 
     finally:
         close_playwright(playwright, context)

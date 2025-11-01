@@ -98,13 +98,13 @@ def post_to_instagram(caption: str, image_path: Union[str, List[str]]):
         except Exception:
             print("⚠️ Could not find caption field. Skipping caption.")
 
-        # --- Publish (commented for safety) ---
-        # try:
-        #     page.get_by_role("button", name="Share", exact=True).click()
-        #     human_delay(5, 8)
-        #     print("✅ Post published successfully!")
-        # except Exception:
-        #     print("❌ Failed to share post. Please verify UI elements.")
+        # --- Publish ---
+        try:
+            page.get_by_role("button", name="Share", exact=True).click()
+            human_delay(5, 8)
+            print("✅ Post published to Instagram successfully!")
+        except Exception:
+            print("❌ Failed to share post. Please verify UI elements.")
 
     finally:
         close_playwright(playwright, context)
