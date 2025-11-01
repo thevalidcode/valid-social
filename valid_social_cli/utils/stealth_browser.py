@@ -1,13 +1,13 @@
-# utils/stealth_browser.py
 import os
 import platform
 import traceback
-from typing import Optional, Tuple, List
-from playwright.sync_api import sync_playwright, Playwright, BrowserContext
 import shutil
 import getpass
+from typing import Optional, Tuple, List
+from pathlib import Path
+from playwright.sync_api import sync_playwright, Playwright, BrowserContext
 
-STEALTH_JS = r"""
+STEALTH_JS: str = r"""
 Object.defineProperty(navigator, 'webdriver', { get: () => false });
 Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
 Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
@@ -26,12 +26,9 @@ def ensure_profile_dir(path: str) -> str:
 
 
 def _candidate_chrome_paths() -> List[str]:
-    """
-    Return the most common Chrome executable locations across Windows installs.
-    """
     candidates: List[str] = []
 
-    # If chrome is on PATH
+    # If Chrome is on PATH
     which_path = shutil.which("chrome") or shutil.which(
         "chrome.exe") or shutil.which("google-chrome")
     if which_path:
@@ -41,17 +38,16 @@ def _candidate_chrome_paths() -> List[str]:
     pf = os.environ.get("ProgramFiles", r"C:\Program Files")
     pf86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
     local_appdata = os.environ.get(
-        "LOCALAPPDATA", os.path.expanduser(r"~\AppData\Local"))
+        "LOCALAPPDATA", str(Path.home() / "AppData/Local"))
 
     candidates += [
         os.path.join(pf, "Google", "Chrome", "Application", "chrome.exe"),
         os.path.join(pf86, "Google", "Chrome", "Application", "chrome.exe"),
         os.path.join(local_appdata, "Programs", "Google",
                      "Chrome", "Application", "chrome.exe"),
-        os.path.join(pf86, "Google", "Chrome", "Application", "chrome.exe"),
     ]
 
-    # Deduplicate but keep order
+    # Deduplicate
     seen: set[str] = set()
     out: List[str] = []
     for p in candidates:
@@ -63,10 +59,9 @@ def _candidate_chrome_paths() -> List[str]:
 
 def _find_chrome_executable() -> Optional[str]:
     """
-    Try to find a system Chrome. Return full path or None.
+    Return system Chrome executable path if available.
     """
-    candidates: List[str] = _candidate_chrome_paths()
-    for path in candidates:
+    for path in _candidate_chrome_paths():
         try:
             path_expanded = os.path.expandvars(path)
             if os.path.isfile(path_expanded) and os.access(path_expanded, os.X_OK):
@@ -86,13 +81,12 @@ def launch_stealth_browser(
     """
     Launch a persistent Chrome context with stealth patches, cross-platform.
     """
-    username = getpass.getuser()
-    system = platform.system()
+    username: str = getpass.getuser()
+    system: str = platform.system()
 
     if user_data_dir is None:
         user_data_dir = os.path.join(
-            "storage", "browser_profiles", f"chrome_{system.lower()}_{username}"
-        )
+            "storage", "browser_profiles", f"chrome_{system.lower()}_{username}")
     user_data_dir = ensure_profile_dir(user_data_dir)
 
     playwright: Playwright = sync_playwright().start()
@@ -111,7 +105,10 @@ def launch_stealth_browser(
 
     common_args: List[str] = [
         "--disable-blink-features=AutomationControlled",
-        "--disable-gpu",
+        "--start-maximized",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--password-store=basic",
     ]
 
     executable_path: Optional[str] = None
@@ -123,8 +120,9 @@ def launch_stealth_browser(
             executable_path = chrome_path
         else:
             print(
-                "⚠️ System Chrome not found on Windows; will try Playwright bundled Chromium as fallback.")
-    elif system == "Linux":
+                "⚠️ System Chrome not found on Windows; using Playwright Chromium fallback.")
+
+    if system == "Linux":
         args += ["--no-sandbox", "--disable-dev-shm-usage"]
 
     try:
@@ -138,6 +136,7 @@ def launch_stealth_browser(
             user_agent=user_agent,
         )
 
+        # Close default blank pages
         for page in context.pages:
             try:
                 page.close()
@@ -145,7 +144,6 @@ def launch_stealth_browser(
                 pass
 
         context.add_init_script(STEALTH_JS)
-
         print(
             f"✅ Launched browser. executable_path={executable_path or 'playwright-chromium'} user_data_dir={user_data_dir}")
         return playwright, context
@@ -153,14 +151,13 @@ def launch_stealth_browser(
     except Exception as exc:
         print("⚠️ Browser launch failed with system Chrome:", exc)
         traceback.print_exc()
-
         try:
             print("ℹ️ Attempting fallback: Playwright bundled Chromium")
             context = playwright.chromium.launch_persistent_context(
                 user_data_dir=user_data_dir,
                 headless=headless,
                 slow_mo=slow_mo,
-                args=common_args + ["--disable-dev-shm-usage"],
+                args=args + ["--disable-dev-shm-usage"],
                 viewport={"width": 1280, "height": 800},
                 user_agent=user_agent,
             )
@@ -188,7 +185,7 @@ def save_session(context: BrowserContext, path: str) -> None:
     context.storage_state(path=path)
 
 
-def close_playwright(playwright: Playwright, context: BrowserContext, show_errors: bool = True) -> None:
+def close_playwright(playwright: Playwright, context: Optional[BrowserContext], show_errors: bool = True) -> None:
     try:
         if context:
             context.close()
