@@ -2,26 +2,70 @@ from typing import List, Optional
 import typer
 from valid_social_cli.services.instagram import post_to_instagram
 from valid_social_cli.services.x import post_to_x
+from valid_social_cli.services.facebook import post_to_facebook
 from valid_social_cli.utils.get_media_files import get_media_files
 
 app = typer.Typer(help="🔐 Post to your social media accounts.")
 
 
 def get_caption() -> str:
-    print("\n📝 Enter caption below (supports emoji and multi-line).")
-    print("Type 'END' on a new line when you're done:\n")
-
     lines: List[str] = []
+
     while True:
-        line = input()
-        if line.strip().upper() == "END":
-            break
-        lines.append(line)
-    return "\n".join(lines)
+        print("\n📝 Enter your caption below (supports emoji and multi-line).")
+        print("Commands:")
+        print("  END    → Finish and submit")
+        print("  SHOW   → Show current caption")
+        print("  EDIT n → Edit line number n (e.g., EDIT 2)")
+        print("  DEL n  → Delete line number n (e.g., DEL 3)")
+        print("  CLEAR  → Clear entire caption\n")
+
+        while True:
+            user_input = input("> ").strip()
+
+            if user_input.upper() == "END":
+                caption = "\n".join(lines).strip()
+                if caption:
+                    return caption
+                else:
+                    print("❌ Caption cannot be empty. Keep typing.")
+            elif user_input.upper() == "SHOW":
+                if not lines:
+                    print("(No lines yet)")
+                else:
+                    print("\nCurrent caption:")
+                    for i, l in enumerate(lines, start=1):
+                        print(f"{i}: {l}")
+                    print()
+            elif user_input.upper().startswith("EDIT "):
+                try:
+                    idx = int(user_input.split()[1]) - 1
+                    if 0 <= idx < len(lines):
+                        new_line = input(f"Edit line {idx+1}: ")
+                        lines[idx] = new_line
+                    else:
+                        print("❌ Invalid line number.")
+                except Exception:
+                    print("❌ Invalid command format. Use EDIT n")
+            elif user_input.upper().startswith("DEL "):
+                try:
+                    idx = int(user_input.split()[1]) - 1
+                    if 0 <= idx < len(lines):
+                        lines.pop(idx)
+                        print(f"Line {idx+1} deleted.")
+                    else:
+                        print("❌ Invalid line number.")
+                except Exception:
+                    print("❌ Invalid command format. Use DEL n")
+            elif user_input.upper() == "CLEAR":
+                lines.clear()
+                print("Caption cleared.")
+            else:
+                lines.append(user_input)
 
 
 def select_platforms() -> List[str]:
-    available = ["Instagram", "X", "Facebook", "TikTok"]
+    available = ["Instagram", "X", "Facebook", "TikTok", "LinkedIn"]
     print("\n📱 Select platforms to post on:")
     for i, name in enumerate(available, start=1):
         print(f" {i}. {name}")
@@ -95,6 +139,8 @@ def post(
     if "X" in platforms:
         post_to_x(caption, media_path)
     if "Facebook" in platforms:
-        print("📘 Facebook upload coming soon.")
+        post_to_facebook(caption, media_path)
     if "TikTok" in platforms:
         print("🎵 TikTok upload coming soon.")
+    if "LinkedIn" in platforms:
+        print("🎵 LinkedIn upload coming soon.")

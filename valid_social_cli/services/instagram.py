@@ -11,6 +11,9 @@ def human_delay(min_sec: float = 0.8, max_sec: float = 2.2):
     time.sleep(random.uniform(min_sec, max_sec))
 
 
+INSTAGRAM_PROFILE_PATH = "storage/browser_profiles/instagram_profile"
+
+
 def post_to_instagram(caption: str, image_path: Union[str, List[str]]):
     """
     Posts to Instagram using an existing logged-in session.
@@ -18,11 +21,10 @@ def post_to_instagram(caption: str, image_path: Union[str, List[str]]):
     """
     print("📸 Posting to Instagram...")
 
-    profile_path = "storage/browser_profiles/instagram_profile"
-    os.makedirs(profile_path, exist_ok=True)
+    os.makedirs(INSTAGRAM_PROFILE_PATH, exist_ok=True)
 
     playwright, context = launch_stealth_browser(
-        user_data_dir=profile_path,
+        user_data_dir=INSTAGRAM_PROFILE_PATH,
         headless=True,
         slow_mo=150,
     )
@@ -39,7 +41,7 @@ def post_to_instagram(caption: str, image_path: Union[str, List[str]]):
             if login_button.is_visible():
                 print("⚠️ You are not logged in to Instagram.")
                 print("➡️ Please run: valid-social login -p instagram")
-                close_playwright(playwright, context)
+                close_playwright(playwright, context, False)
                 return
         except Exception:
             pass  # Already logged in

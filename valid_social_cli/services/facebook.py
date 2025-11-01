@@ -1,5 +1,6 @@
 import os
 import time
+import re
 import random
 from typing import List, Union, Optional
 from valid_social_cli.utils.stealth_browser import launch_stealth_browser, close_playwright
@@ -10,37 +11,34 @@ def human_delay(min_sec: float = 0.8, max_sec: float = 2.2):
     time.sleep(random.uniform(min_sec, max_sec))
 
 
-X_PROFILE_PATH = "storage/browser_profiles/x_profile"
+FACEBOOK_PROFILE_PATH = "storage/browser_profiles/facebook_profile"
 
 
-def post_to_x(caption: str, media_path: Optional[Union[str, List[str]]] = None) -> None:
-    print("Posting to x...")
+def post_to_facebook(caption: str, media_path: Optional[Union[str, List[str]]] = None) -> None:
+    print("Posting to facebook...")
 
     # Ensure browser profile directory exists
-    os.makedirs(X_PROFILE_PATH, exist_ok=True)
+    os.makedirs(FACEBOOK_PROFILE_PATH, exist_ok=True)
 
     # Launch stealth browser using persistent user_data_dir
     playwright, context = launch_stealth_browser(
-        user_data_dir=X_PROFILE_PATH,
+        user_data_dir=FACEBOOK_PROFILE_PATH,
         headless=True,
         slow_mo=150,
     )
 
     try:
         page = context.new_page()
-        page.goto("https://x.com/home", wait_until="domcontentloaded")
+        page.goto("https://web.facebook.com", wait_until="domcontentloaded")
         human_delay(5, 8)
 
         # --- LOGIN CHECK ---
+        login_page = page.get_by_label("Sign in to facebook").get_by_role("group").locator(
+            "div").filter(has_text="Sign in to facebookSign in with").nth(2)
         try:
-            login_button = page.get_by_role("button", name="Forgot Password?")
-            current_url = page.url
-
-            if (login_button.is_visible() or
-                "login" in current_url or
-                    "flow/login" in current_url):
-                print("⚠️ You are not logged in to X.")
-                print("➡️ Please run: valid-social login -p x")
+            if login_page.is_visible():
+                print("⚠️ You are not logged in to facebook.")
+                print("➡️ Please run: valid-social login -p facebook")
                 close_playwright(playwright, context, False)
                 return
         except Exception:
@@ -49,14 +47,15 @@ def post_to_x(caption: str, media_path: Optional[Union[str, List[str]]] = None) 
 
         # --- OPEN NEW POST DIALOG ---
         try:
-            post_link = page.get_by_role("link", name="Post")
-            if post_link:
-                post_link.first.click()
+            post_dialog = page.locator(
+                "div[role='button']", has_text=re.compile("what's on your mind", re.I))
+            if post_dialog:
+                post_dialog.first.click()
                 print("🪶 Opened post dialog.")
             else:
-                raise Exception("Post button not found.")
+                raise Exception("Post dialog button not found.")
         except Exception:
-            print("❌ Could not find 'Post Link' button — UI may have changed.")
+            print("❌ Could not find 'What's on your mind' button — UI may have changed.")
             close_playwright(playwright, context)
 
         human_delay(2, 4)
@@ -85,13 +84,23 @@ def post_to_x(caption: str, media_path: Optional[Union[str, List[str]]] = None) 
         else:
             print("ℹ️ No media provided. Posting text-only tweet.")
 
+        # --- Click Next ---
+        for _ in range(2):
+            try:
+                next_btn = page.locator("div").filter(
+                    has_text=re.compile(r"^Next$")).nth(1)
+                next_btn.click()
+                human_delay(2, 4)
+            except Exception:
+                print("⚠️ Could not click 'Next' — skipping.")
+                continue
+
         # --- POST ---
         try:
-            share_button = page.locator(
-                'button[data-testid="tweetButton"]:not([disabled])')
+            share_button = page.locator('[aria-label="Post"]')
             share_button.click()
             human_delay(5, 8)
-            print("✅ Post published to X successfully!")
+            print("✅ Post published to Facebook successfully!")
         except Exception:
             print("❌ Failed to click final 'Post' button. UI may have changed.")
 

@@ -1,5 +1,6 @@
 # utils/stealth_browser.py
 import os
+import traceback
 from typing import Optional, Tuple
 from playwright.sync_api import sync_playwright, Playwright, BrowserContext
 
@@ -58,6 +59,8 @@ def launch_stealth_browser(
             "--disable-blink-features=AutomationControlled",
             "--no-sandbox",
             "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-setuid-sandbox",
         ],
         viewport={"width": 1280, "height": 800},
         user_agent=user_agent,
@@ -83,9 +86,53 @@ def save_session(context: BrowserContext, path: str) -> None:
     context.storage_state(path=path)
 
 
-def close_playwright(playwright: Playwright, context: BrowserContext) -> None:
-    """Close context and stop Playwright gracefully."""
+def close_playwright(
+    playwright: Playwright,
+    context: BrowserContext,
+    show_errors: bool = True
+) -> None:
+    """
+    Close Playwright browser context and stop Playwright gracefully.
+
+    Parameters:
+    - playwright: The Playwright instance.
+    - context: The BrowserContext instance.
+    - show_errors: Whether to print detailed error messages (default True).
+
+    Behavior:
+    - Tries to close the browser context.
+    - Tries to stop Playwright.
+    - If show_errors=False, suppresses all error messages.
+    """
+
+    # Close the browser context
     try:
-        context.close()
-    finally:
-        playwright.stop()
+        if context:
+            context.close()
+            if show_errors:
+                print("✅ Browser context closed successfully.")
+        else:
+            if show_errors:
+                print("⚠️ No browser context found to close.")
+    except Exception as e:
+        if show_errors:
+            print("⚠️ Failed to close browser context!")
+            print(f"   Exception: {type(e).__name__} - {e}")
+            print("   Traceback (for debugging purposes):")
+            traceback.print_exc()
+
+    # Stop the Playwright instance
+    try:
+        if playwright:
+            playwright.stop()
+            if show_errors:
+                print("✅ Playwright stopped successfully.")
+        else:
+            if show_errors:
+                print("⚠️ No Playwright instance found to stop.")
+    except Exception as e:
+        if show_errors:
+            print("⚠️ Failed to stop Playwright!")
+            print(f"   Exception: {type(e).__name__} - {e}")
+            print("   Traceback (for debugging purposes):")
+            traceback.print_exc()

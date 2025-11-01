@@ -10,6 +10,8 @@ class PlatformEnum(str, Enum):
     INSTAGRAM = "instagram"
     X = "x"
     FACEBOOK = "facebook"
+    LINKEDIN = "linkedin"
+    TIKTOK = "facebook"
 
 
 @app.callback(invoke_without_command=True)
@@ -80,6 +82,35 @@ def login(
                 "✅ X session saved successfully. You won’t need to log in again.")
         finally:
             close_playwright(playwright, context)
+
+    elif platform == PlatformEnum.FACEBOOK:
+        profile_path = "storage/browser_profiles/facebook_profile"
+        os.makedirs(profile_path, exist_ok=True)
+
+        print("🌐 Launching Facebook login browser...")
+        playwright, context = launch_stealth_browser(
+            user_data_dir=profile_path,
+            headless=False,
+            slow_mo=150,
+        )
+
+        try:
+            page = context.new_page()
+            page.goto("https://facebook.com",
+                      wait_until="domcontentloaded")
+
+            print("⚠️ Please log in manually in the opened browser window.")
+            print(
+                "Once logged in and your feed appears, close any popups, then return here.")
+            print(
+                "⏸️ Waiting for you to finish login (press Resume in Playwright Inspector if needed)...")
+            page.pause()
+
+            print(
+                "✅ Facebook session saved successfully. You won’t need to log in again.")
+        finally:
+            close_playwright(playwright, context)
+
     else:
         print(f"❌ Unsupported platform: {platform}")
 
