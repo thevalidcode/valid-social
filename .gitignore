@@ -1,0 +1,6 @@
+valid_social_cli/storage/sessions
+valid_social_cli/storage/browser_profiles
+
+dist/
+valid_social.egg-info
+*.pyc

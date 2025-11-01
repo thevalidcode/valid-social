@@ -1,0 +1,53 @@
+# name: 🚀 Release Pipeline
+
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       bump:
+#         description: "Version bump type (patch, minor, major)"
+#         required: true
+#         default: "patch"
+
+# permissions:
+#   contents: write
+
+# jobs:
+#   release:
+#     name: "📦 Bump Version, Generate Changelog & Publish"
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: 🧩 Checkout code
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+
+#       - name: 🐍 Setup Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.13"
+
+#       - name: 📦 Install tools
+#         run: |
+#           pip install bump-my-version git-changelog build twine
+
+#       - name: 🪄 Bump version
+#         run: |
+#           bump-my-version bump ${{ github.event.inputs.bump }}
+#           git push --follow-tags
+
+#       - name: 🧾 Generate changelog
+#         run: |
+#           git-changelog -o CHANGELOG.md
+#           git add CHANGELOG.md
+#           git commit -m "📝 Update changelog [skip ci]" || echo "No changes to commit"
+#           git push
+
+#       - name: 🏗️ Build package
+#         run: python -m build
+
+#       - name: 🚀 Publish to PyPI
+#         env:
+#           TWINE_USERNAME: __token__
+#           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+#         run: twine upload dist/*
