@@ -14,7 +14,7 @@ Valid Social streamlines your social media workflow by leveraging browser automa
 
 ## ✨ Features
 
-- **Multi-Platform Support**: Post to Instagram and X simultaneously. Support for Facebook and TikTok is planned for future releases.
+- **Multi-Platform Support**: Post to Instagram, Facebook and X simultaneously. Support for TikTok and LinkedIn is planned for future releases.
 - **Persistent Login**: Log in once manually through the CLI. Your session is securely saved for all future automated posts.
 - **Interactive Interface**: An intuitive command-line interface guides you through composing your posts, from writing captions to selecting media.
 - **Media Uploads**: Attach images and videos to your posts with a simple file selector.
