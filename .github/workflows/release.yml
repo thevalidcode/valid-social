@@ -10,12 +10,14 @@ on:
 
 permissions:
   contents: write
-  
+  packages: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -33,16 +35,48 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump version
-        run: bump-my-version bump ${{ github.event.inputs.bump }}
-
-      - name: Push changes
+        id: bump
         run: |
-          git push --follow-tags origin main
+          bump-my-version bump ${{ github.event.inputs.bump }}
+          echo "version=$(bump-my-version show current_version)" >> $GITHUB_OUTPUT
 
-      - name: Build and publish
+      - name: Push changes and tags
+        run: |
+          git push origin main
+          git push origin --tags
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
+
+      - name: Generate Changelog
+        id: changelog
         run: |
-          python -m build
-          twine upload dist/*
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            echo "changelog=$(git log --pretty=format:'- %s (%h)' | head -n 20)" >> $GITHUB_OUTPUT
+          else
+            echo "changelog=$(git log $LAST_TAG..HEAD --pretty=format:'- %s (%h)' | head -n 20)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.version }}
+          name: "Valid-Social v${{ steps.bump.outputs.version }}"
+          body: |
+            🚀 **Valid-Social v${{ steps.bump.outputs.version }} Released**
+
+            **Version bump:** `${{ github.event.inputs.bump }}`
+
+            **Recent Changes:**
+            ${{ steps.changelog.outputs.changelog }}
+
+            📦 [View on PyPI](https://pypi.org/project/valid-social/)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
