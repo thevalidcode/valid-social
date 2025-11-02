@@ -1,6 +1,6 @@
 [project]
 name = "valid-social"
-version = "0.1.5"
+version = "0.1.6"
 description = "Automate posting to multiple social media platforms right from your terminal."
 authors = [
   { name = "Ibeh Precious (Valid)", email = "thevalidcode@gmail.com" }
