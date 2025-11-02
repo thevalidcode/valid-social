@@ -4,3 +4,5 @@ storage/browser_profiles
 dist/
 valid_social.egg-info
 *.pyc
+venv
+build

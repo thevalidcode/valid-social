@@ -6,7 +6,7 @@ authors = [
   { name = "Ibeh Precious (Valid)", email = "thevalidcode@gmail.com" }
 ]
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.9"
 dependencies = [
   "typer[all]",
@@ -23,3 +23,6 @@ valid-social = "valid_social_cli.main:app"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["valid_social_cli*"]

@@ -91,7 +91,8 @@ def default_user_data_dir(prefix: str = "chromium") -> str:
     """
     Build a safe per-user, per-platform profile folder path.
     """
-    username = os.getenv("USERNAME") or os.getenv("USER") or "user"
+    username = (os.getenv("USERNAME") or os.getenv(
+        "USER") or "user").replace(" ", "_")
     system = platform.system().lower()
     base = os.path.join("storage", "browser_profiles")
     path = os.path.join(base, f"{prefix}_{system}_{username}")
@@ -105,8 +106,6 @@ def launch_stealth_browser(
     headless: bool = False,
     slow_mo: int = 60,
     user_agent: Optional[str] = None,
-    # ignored: we always use bundled Chromium for reliability
-    prefer_system_chrome: bool = False,
 ) -> Tuple[Playwright, BrowserContext]:
     """
     Launch Playwright bundled Chromium with stealth patches and a persistent context.
