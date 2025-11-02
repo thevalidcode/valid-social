@@ -23,7 +23,7 @@ def post_to_facebook(caption: str, media_path: Optional[Union[str, List[str]]] =
     # Launch stealth browser using persistent user_data_dir
     playwright, context = launch_stealth_browser(
         user_data_dir=FACEBOOK_PROFILE_PATH,
-        headless=True,
+        headless=False,
         slow_mo=150,
     )
 
@@ -33,10 +33,10 @@ def post_to_facebook(caption: str, media_path: Optional[Union[str, List[str]]] =
         human_delay(5, 8)
 
         # --- LOGIN CHECK ---
-        login_page = page.get_by_label("Sign in to facebook").get_by_role("group").locator(
-            "div").filter(has_text="Sign in to facebookSign in with").nth(2)
+        login_button = page.locator("div").filter(
+            has_text=re.compile(r"^Log in$")).first
         try:
-            if login_page.is_visible():
+            if login_button.is_visible():
                 print("⚠️ You are not logged in to facebook.")
                 print("➡️ Please run: valid-social login -p facebook")
                 close_playwright(playwright, context, False)

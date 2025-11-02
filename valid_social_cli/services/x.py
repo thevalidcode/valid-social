@@ -31,9 +31,20 @@ def post_to_x(caption: str, media_path: Optional[Union[str, List[str]]] = None) 
         page.goto("https://x.com/home", wait_until="domcontentloaded")
         human_delay(5, 8)
 
+        # --- TRY AGAIN CHECK ---
+        try:
+            login_button = page.locator("button:has-text('Try again')")
+            if login_button.count() > 0 and login_button.first.is_visible():
+                login_button.first.click()
+                # Wait until button disappears (or timeout)
+                login_button.first.wait_for(state="detached", timeout=5000)
+                print("➡️ 'Try again' clicked, continuing...")
+        except Exception:
+            # No button appeared or error, just continue
+            pass
         # --- LOGIN CHECK ---
         try:
-            login_button = page.get_by_role("button", name="Forgot Password?")
+            login_button = page.locator("button:has-text('Next')")
             current_url = page.url
 
             if (login_button.is_visible() or
